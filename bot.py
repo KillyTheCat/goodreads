@@ -2,6 +2,7 @@
 import discord
 import requests
 from bs4 import BeautifulSoup
+import xml.etree.ElementTree as ET
 
 
 
@@ -171,3 +172,37 @@ def getUserDetails(username):
         return None
 
 client.run(TOKEN)
+
+def findAuthorBooksByName(authorName , APIkey):
+    searchUrl = 'https://www.goodreads.com/api/author_url/searchstring?key=' + APIkey
+    authorBooksUrl = 'https://www.goodreads.com/author/list/authorid?format=xml&key=' + APIkey
+
+    author_name = authorName
+    author_name = author_name.replace(" ", "%20")
+    searchUrl = searchUrl.replace("searchstring", author_name)
+
+    # to get author ID
+    resp = requests.get(searchUrl)
+    dic = ET.fromstring(resp.content)
+
+    for child in dic.findall('author'):
+        authorid = child.get('id')
+        link = child.find('link').text
+
+    author_name_actual = dic[1][0].text
+
+    print("Author id:", authorid)
+    print("Author name:", author_name_actual)
+    print("Goodreads Link:", link)
+
+    # to get books by the author
+    resp = requests.get(authorBooksUrl.replace("authorid", authorid))
+    dic = ET.fromstring(resp.content)
+
+    print("Books:")
+    print()
+    print()
+    for child in dic.findall('author'):
+        for books in dic[1][3].findall('book'):
+            print("Book ID: ", books.find('id').text, " Title: ", books.find('title').text)
+            print("Link: <", books.find('link').text, ">", sep='')
